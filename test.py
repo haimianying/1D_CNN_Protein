@@ -1,31 +1,52 @@
 import keras
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation
-from keras.optimizers import SGD
-
-# Generate dummy data
+from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D
+from keras.models import Model
 import numpy as np
-x_train = np.random.random((1000, 20))
-y_train = keras.utils.to_categorical(np.random.randint(10, size=(1000, 1)), num_classes=10)
-x_test = np.random.random((100, 20))
-y_test = keras.utils.to_categorical(np.random.randint(10, size=(100, 1)), num_classes=10)
 
-model = Sequential()
-# Dense(64) is a fully-connected layer with 64 hidden units.
-# in the first layer, you must specify the expected input data shape:
-# here, 20-dimensional vectors.
-model.add(Dense(64, activation='relu', input_dim=20))
-model.add(Dropout(0.5))
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(10, activation='softmax'))
+#Specify filter window size:
+filterWindow = 3
 
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='categorical_crossentropy',
-              optimizer=sgd,
-              metrics=['accuracy'])
+#Specify stride:
+stride= 3
 
-model.fit(x_train, y_train,
-          epochs=20,
-          batch_size=128)
-score = model.evaluate(x_test, y_test, batch_size=128)
+#Number of filters:
+nFilters = 11
+
+#Specify input size:
+inputSize = 103
+
+
+#------------------------------#
+
+
+# Load trajectory data
+traj = np.loadtxt('cleaned.gro')
+
+#Testing
+x_train = traj[0:103,0:3].T
+y_train = traj[103:206,0:3].T
+
+input_shape = Input(shape=(103,3))
+
+#Setup 1D Convolutional Autoencoder
+#First, encoder:
+model = Conv1D(nFilters,filterWindow, strides=stride, activation='relu')(input_shape)
+encoded = MaxPooling1D(2)(model)
+
+#Now, decoder:
+model = Conv1D(nFilters,filterWindow, strides=stride, activation='relu')(encoded)
+model = UpSampling1D(2)(model)
+decoded = Conv1D(1,filterWindow, strides=stride, activation='sigmoid')(model)
+
+
+model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['accuracy'])
+
+x_train = np.reshape(x_train,(1,103,3))
+y_train = np.reshape(y_train,(1,103,3))
+
+model.fit(x_train, y_train, epochs=20, batch_size=128)
+#score = model.evaluate(x_test, y_test, batch_size=128)
+
+
+
+
