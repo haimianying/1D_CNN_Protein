@@ -1,6 +1,7 @@
 import keras
 from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D
 from keras.models import Model
+from keras.preprocessing import sequence
 import numpy as np
 
 #Specify filter window size:
@@ -13,7 +14,7 @@ stride= 1
 nFilters = 30
 
 #Specify input size:
-inputSize = 100
+inputSize = 103
 
 #Number of samples
 nSamples = 10
@@ -21,33 +22,88 @@ nSamples = 10
 #Epochs
 nEpochs = 2000
 
+#Max length - Nearest power of two above inputSize. Automate this.
+maxLen = 128
+
 #------------------------------#
 
-
+#DATA PREPROCESSING
 # Load trajectory data
 traj = np.loadtxt('cleaned.gro')
 
 #Testing - load a single timepoint
 x_train = traj[0:inputSize*nSamples,0:3]
-y_train = traj[100:inputSize*nSamples+100,0:3]
+y_train = traj[inputSize:inputSize*(nSamples+1),0:3]
+
+#Reshape to add number of samples dimension
+x_train = np.reshape(x_train,(nSamples,inputSize,3))
+y_train = np.reshape(y_train,(nSamples,inputSize,3))
+
+#Remove geometrical center from each timepoint
+for i in range(0,nSamples):
+	x_shifti = np.average(x_train[i,:,0])
+	x_shiftj = np.average(x_train[i,:,1])
+	x_shiftk = np.average(x_train[i,:,2])
+
+	y_shifti = np.average(y_train[i,:,0])
+	y_shiftj = np.average(y_train[i,:,1])
+	y_shiftk = np.average(y_train[i,:,2])
+
+	x_train[i,:,0] = x_train[i,:,0] - x_shifti
+	x_train[i,:,1] = x_train[i,:,1] - x_shiftj 
+	x_train[i,:,2] = x_train[i,:,2] - x_shiftk 
+
+	y_train[i,:,0] = y_train[i,:,0] - y_shifti 
+	y_train[i,:,0] = y_train[i,:,1] - y_shiftj 
+	y_train[i,:,0] = y_train[i,:,2] - y_shiftk 
+
+
+#Now scale from -1 to 1
+#Omit for now.
+if(0):
+	x_min = np.amin(x_train)
+	y_min = np.amin(y_train)
+
+	x_train = x_train - x_min
+	y_train = y_train - y_min
+
+	x_coeff = np.amax(x_train)
+	y_coeff = np.amax(y_train)
+
+	x_train = x_train/x_coeff
+	y_train = y_train/y_coeff
+
+#print(x_train[0,:,:])
+
+#Preprocess data - Raise to the nearest power of 2.
+x_train = sequence.pad_sequences(x_train, maxlen = maxLen, dtype='float', padding = 'post', value=0.)
+y_train = sequence.pad_sequences(y_train, maxlen = maxLen, dtype='float', padding = 'post', value=0.)
+
+#print(x_train[0,:,:])
+#exit()
 
 #Save for evaluation of autoencoder performance
 y_test = y_train
 
-input_shape = Input(shape=(inputSize,3))
+input_shape = Input(shape=(maxLen,3))
 
+#MODEL SETUP
 #Setup 1D Convolutional Autoencoder
 #First, encoder:
+counter = maxLen/2.0
 x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(input_shape)
 x = MaxPooling1D(2)(x)
-x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
-x = MaxPooling1D(2)(x)
+while(counter/2.0 != 1):	
+	x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
+	x = MaxPooling1D(2)(x)
+	counter = counter/2.0
 
 #Now, decoder:
-x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
-x= UpSampling1D(2)(x)
-x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
-x= UpSampling1D(2)(x)
+while(counter/2.0 != maxLen/2):
+	x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
+	x= UpSampling1D(2)(x)
+	counter = counter*2
+
 decoded = Conv1D(3,filterWindow, strides=stride, activation='sigmoid',padding='same')(x)
 
 autoencoder = Model(input_shape,decoded)
@@ -55,59 +111,30 @@ autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 
 print(autoencoder.summary())
 
-
-#Reshape to add number of samples dimension
-x_train = np.reshape(x_train,(nSamples,inputSize,3))
-y_train = np.reshape(y_train,(nSamples,inputSize,3))
-
-
-#Remove geometrical center
-x_shifti = np.average(x_train[:,0])
-x_shiftj = np.average(x_train[:,1])
-x_shiftk = np.average(x_train[:,2])
-
-y_shifti = np.average(y_train[:,0])
-y_shiftj = np.average(y_train[:,1])
-y_shiftk = np.average(y_train[:,2])
-
-x_train[:,0] = x_train[:,0] - x_shifti
-x_train[:,1] = x_train[:,1] - x_shiftj 
-x_train[:,2] = x_train[:,2] - x_shiftk 
-
-y_train[:,0] = y_train[:,0] - y_shifti 
-y_train[:,0] = y_train[:,1] - y_shiftj 
-y_train[:,0] = y_train[:,2] - y_shiftk 
-
-
-#Now scale from 0 to 1
-x_min = np.amin(x_train)
-y_min = np.amin(y_train)
-
-x_train = x_train - x_min
-y_train = y_train - y_min
-
-x_coeff = np.amax(x_train)
-y_coeff = np.amax(y_train)
-
-x_train = x_train/x_coeff
-y_train = y_train/y_coeff
-
-print x_train
-
 #Train!
 autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=10)
 
 #See performance on training data
 output = autoencoder.predict(x_train)
-output = output*y_coeff + y_min
 
-output[:,0] = output[:,0] + y_shifti
-output[:,1] = output[:,1] + y_shiftj
-output[:,2] = output[:,2] + y_shiftk
+if(0):
+	output = output*y_coeff + y_min
 
-output=np.reshape(output,(1,inputSize*nSamples,3))
-output=np.reshape(output,(inputSize*nSamples,3))
-np.savetxt('output',output)
+	output[:,0] = output[:,0] + y_shifti
+	output[:,1] = output[:,1] + y_shiftj
+	output[:,2] = output[:,2] + y_shiftk
+
+	output=np.reshape(output,(1,inputSize*nSamples,3))
+	output=np.reshape(output,(inputSize*nSamples,3))
+
+output=np.reshape(output,(1,maxLen*nSamples,3))
+output=np.reshape(output,(maxLen*nSamples,3))
+y_test=np.reshape(y_train,(1,maxLen*nSamples,3))
+y_test=np.reshape(y_test,(maxLen*nSamples,3))
+
+np.savetxt('target_trj',y_test)
+np.savetxt('autoencoded_trj',output)
+np.savetxt('error',output-y_test)
 
 
 

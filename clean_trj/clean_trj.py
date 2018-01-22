@@ -11,14 +11,13 @@ import re
 period = 106
 
 #Number of spurious lines
-nRemove = 6
+nRemove = 3
 
 #Trj to open in gro format
 trjname = '../deca_alanine/nvt_full.gro'
 
 #Output file name
 cleanedTrj = '../cleaned.gro'
-
 
 
 
