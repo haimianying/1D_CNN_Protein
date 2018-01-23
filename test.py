@@ -11,19 +11,22 @@ filterWindow = 10
 stride= 1
 
 #Number of filters:
-nFilters = 30
+nFilters = 1000
 
 #Specify input size:
 inputSize = 103
 
 #Number of samples
-nSamples = 10
+nSamples = 1
 
 #Epochs
-nEpochs = 2000
+nEpochs = 5000
 
 #Max length - Nearest power of two above inputSize. Automate this.
 maxLen = 128
+
+#Bottleneck
+bottleneck = 64
 
 #------------------------------#
 
@@ -40,23 +43,32 @@ x_train = np.reshape(x_train,(nSamples,inputSize,3))
 y_train = np.reshape(y_train,(nSamples,inputSize,3))
 
 #Remove geometrical center from each timepoint
+x_shifti=np.ones(nSamples)
+x_shiftj=np.ones(nSamples)
+x_shiftk=np.ones(nSamples)
+
+y_shifti=np.ones(nSamples)
+y_shiftj=np.ones(nSamples)
+y_shiftk=np.ones(nSamples)
+
 for i in range(0,nSamples):
-	x_shifti = np.average(x_train[i,:,0])
-	x_shiftj = np.average(x_train[i,:,1])
-	x_shiftk = np.average(x_train[i,:,2])
+	x_shifti[i] = np.average(x_train[i,:,0])
+	x_shiftj[i] = np.average(x_train[i,:,1])
+	x_shiftk[i] = np.average(x_train[i,:,2])
 
-	y_shifti = np.average(y_train[i,:,0])
-	y_shiftj = np.average(y_train[i,:,1])
-	y_shiftk = np.average(y_train[i,:,2])
+	y_shifti[i] = np.average(y_train[i,:,0])
+	y_shiftj[i] = np.average(y_train[i,:,1])
+	y_shiftk[i] = np.average(y_train[i,:,2])
 
-	x_train[i,:,0] = x_train[i,:,0] - x_shifti
-	x_train[i,:,1] = x_train[i,:,1] - x_shiftj 
-	x_train[i,:,2] = x_train[i,:,2] - x_shiftk 
+	x_train[i,:,0] = x_train[i,:,0] - x_shifti[i]
+	x_train[i,:,1] = x_train[i,:,1] - x_shiftj[i]
+	x_train[i,:,2] = x_train[i,:,2] - x_shiftk[i] 
 
-	y_train[i,:,0] = y_train[i,:,0] - y_shifti 
-	y_train[i,:,0] = y_train[i,:,1] - y_shiftj 
-	y_train[i,:,0] = y_train[i,:,2] - y_shiftk 
+	y_train[i,:,0] = y_train[i,:,0] - y_shifti[i] 
+	y_train[i,:,1] = y_train[i,:,1] - y_shiftj[i] 
+	y_train[i,:,2] = y_train[i,:,2] - y_shiftk[i] 
 
+print(y_train)
 
 #Now scale from -1 to 1
 #Omit for now.
@@ -93,7 +105,7 @@ input_shape = Input(shape=(maxLen,3))
 counter = maxLen/2.0
 x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(input_shape)
 x = MaxPooling1D(2)(x)
-while(counter/2.0 != 1):	
+while(counter/2.0 != bottleneck/2):	
 	x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
 	x = MaxPooling1D(2)(x)
 	counter = counter/2.0
@@ -104,10 +116,10 @@ while(counter/2.0 != maxLen/2):
 	x= UpSampling1D(2)(x)
 	counter = counter*2
 
-decoded = Conv1D(3,filterWindow, strides=stride, activation='sigmoid',padding='same')(x)
+decoded = Conv1D(3,filterWindow, strides=stride, activation='linear',padding='same')(x)
 
 autoencoder = Model(input_shape,decoded)
-autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
+autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
 
 print(autoencoder.summary())
 
@@ -126,6 +138,16 @@ if(0):
 
 	output=np.reshape(output,(1,inputSize*nSamples,3))
 	output=np.reshape(output,(inputSize*nSamples,3))
+
+if(0):
+	for i in range(0,nSamples):
+		x_train[i,:,0] = x_train[i,:,0] + x_shifti[i]
+		x_train[i,:,1] = x_train[i,:,1] + x_shiftj[i]
+		x_train[i,:,2] = x_train[i,:,2] + x_shiftk[i] 
+
+		y_train[i,:,0] = y_train[i,:,0] + y_shifti[i] 
+		y_train[i,:,1] = y_train[i,:,1] + y_shiftj[i] 
+		y_train[i,:,2] = y_train[i,:,2] + y_shiftk[i]
 
 output=np.reshape(output,(1,maxLen*nSamples,3))
 output=np.reshape(output,(maxLen*nSamples,3))
