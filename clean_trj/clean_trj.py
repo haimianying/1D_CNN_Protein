@@ -17,7 +17,7 @@ nRemove = 3
 trjname = '../deca_alanine/nvt_full.gro'
 
 #Output file name
-cleanedTrj = '../cleaned.gro'
+cleanedTrj = '../cleaned_input'
 
 
 
