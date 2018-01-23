@@ -4,6 +4,9 @@ from keras.models import Model
 from keras.preprocessing import sequence
 import numpy as np
 
+#batch size:
+batchSize = 100
+
 #Specify filter window size:
 filterWindow = 10
 
@@ -11,13 +14,13 @@ filterWindow = 10
 stride= 1
 
 #Number of filters:
-nFilters = 1000
+nFilters = 100
 
 #Specify input size:
 inputSize = 103
 
 #Number of samples
-nSamples = 1
+nSamples = 100
 
 #Epochs
 nEpochs = 5000
@@ -26,7 +29,7 @@ nEpochs = 5000
 maxLen = 128
 
 #Bottleneck
-bottleneck = 64
+bottleneck = 2
 
 #------------------------------#
 
@@ -124,7 +127,7 @@ autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
 print(autoencoder.summary())
 
 #Train!
-autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=10)
+autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=batchSize)
 
 #See performance on training data
 output = autoencoder.predict(x_train)
