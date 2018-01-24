@@ -6,7 +6,7 @@ import numpy as np
 import time 
 
 #batch size:
-batchSize = 100
+batchSize = 500
 
 #Specify filter window size:
 filterWindow = 8
@@ -24,7 +24,7 @@ inputSize = 103
 nSamples = 1000
 
 #Epochs
-nEpochs = 5000
+nEpochs = 10000
 
 #Max length - Nearest power of two above inputSize. Automate this.
 maxLen = 128
@@ -141,9 +141,9 @@ with open('model_details.txt','w') as fh:
 
 
 #Train!
-traning_start = time.time()
+training_start = time.time()
 autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=batchSize)
-traning_end = time.time()
+training_end = time.time()
 
 #See performance on training data
 output = autoencoder.predict(x_train)
@@ -176,8 +176,7 @@ y_test=np.reshape(y_test,(maxLen*nSamples,3))
 np.savetxt('target_trj',y_test)
 np.savetxt('autoencoded_trj',output)
 np.savetxt('error',output-y_test)
-np.savetxt('training_time',training_end-training_start)
-details=open('training_details')
+details=open('training_details','w')
 details.write('#batch size: batchSize = '+str(batchSize)+ '\n')
 details.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')
 details.write('#Specify stride: stride= '+str(stride)+ ' \n')
@@ -188,6 +187,8 @@ details.write('#Epochs: nEpochs = '+str(nEpochs)+ ' \n')
 details.write('#Max length - Nearest power of two above inputSize. Automate this.: maxLen = '+str(maxLen)+ ' \n')
 details.write('#Bottleneck: bottleneck = '+str(bottleneck)+ ' \n')
 details.write('#Compression per layer: compression = '+str(compression)+ ' \n')
+details.write('Total training time in seconds: '+str(training_end-training_start))
+details.close()
 
 
 
