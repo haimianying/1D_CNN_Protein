@@ -35,7 +35,7 @@ bottleneck = 2
 
 #DATA PREPROCESSING
 # Load trajectory data
-traj = np.loadtxt('cleaned.gro')
+traj = np.loadtxt('cleaned_input')
 
 #Testing - load a single timepoint
 x_train = traj[0:inputSize*nSamples,0:3]
@@ -113,6 +113,11 @@ while(counter/2.0 != bottleneck/2):
 	x = MaxPooling1D(2)(x)
 	counter = counter/2.0
 
+
+#Add a dense layer bottleneck
+x = Dense(bottleneck, activation = 'linear')(x)
+
+
 #Now, decoder:
 while(counter/2.0 != maxLen/2):
 	x = Conv1D(nFilters,filterWindow, strides=stride, activation='relu',padding='same')(x)
@@ -125,7 +130,7 @@ autoencoder = Model(input_shape,decoded)
 autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
 
 print(autoencoder.summary())
-
+exit()
 #Train!
 autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=batchSize)
 
