@@ -71,7 +71,7 @@ for i in range(0,nSamples):
 	y_train[i,:,1] = y_train[i,:,1] - y_shiftj[i] 
 	y_train[i,:,2] = y_train[i,:,2] - y_shiftk[i] 
 
-print(y_train)
+#print(y_train)
 
 #Now scale from -1 to 1
 #Omit for now.
