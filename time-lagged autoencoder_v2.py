@@ -3,24 +3,25 @@ from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, Flatt
 from keras.models import Model
 from keras.preprocessing import sequence
 import numpy as np
+import time 
 
 #batch size:
 batchSize = 100
 
 #Specify filter window size:
-filterWindow = 10
+filterWindow = 8
 
 #Specify stride:
 stride= 1
 
 #Number of filters:
-nFilters = 100
+nFilters = 16
 
 #Specify input size:
 inputSize = 103
 
 #Number of samples
-nSamples = 100
+nSamples = 1000
 
 #Epochs
 nEpochs = 5000
@@ -30,6 +31,9 @@ maxLen = 128
 
 #Bottleneck
 bottleneck = 2
+
+#Compression per layer
+compression = 4
 
 #------------------------------#
 
@@ -105,29 +109,29 @@ input_shape = Input(shape=(maxLen,3))
 #MODEL SETUP
 #Setup 1D Convolutional Autoencoder
 #First, encoder:
-counter = maxLen/2.0
+counter = maxLen/compression
 x = Conv1D(nFilters,filterWindow, strides=stride, activation='elu',padding='same')(input_shape)
-x = MaxPooling1D(2)(x)
-while(counter/2.0 != bottleneck/2):	
+x = MaxPooling1D(compression)(x)
+while(counter/compression >= compression):	
 	x = Conv1D(nFilters,filterWindow, strides=stride, activation='elu',padding='same')(x)
-	x = MaxPooling1D(2)(x)
-	counter = counter/2.0
+	x = MaxPooling1D(compression)(x)
+	counter = counter/compression
 
 
 #Add a dense layer bottleneck
 x = Flatten()(x)
-x = Dense(bottleneck, activation = 'linear')(x)
-x = Dense((bottleneck*nFilters))(x)
-x = Reshape((bottleneck,nFilters))(x)
+x = Dense(bottleneck, activation = 'elu')(x)
+x = Dense(int(counter*nFilters), activation = 'elu')(x)
+x = Reshape((int(counter),nFilters))(x)
 
 
 #Now, decoder:
-while(counter/2.0 != maxLen/2):
-	x = Conv1D(nFilters,filterWindow, strides=stride, activation='elu',padding='same')(x)
-	x= UpSampling1D(2)(x)
-	counter = counter*2
+while(counter <= maxLen/compression):
+	x= UpSampling1D(compression)(x)
+	x = Conv1D(nFilters,filterWindow, strides=stride, activation='elu',padding='same')(x)	
+	counter = counter*compression
 
-decoded = Conv1D(3,filterWindow, strides=stride, activation='linear',padding='same')(x)
+decoded = Dense(3)(x)
 
 autoencoder = Model(input_shape,decoded)
 autoencoder.compile(optimizer='adamax', loss='mean_squared_error')
@@ -135,10 +139,11 @@ autoencoder.compile(optimizer='adamax', loss='mean_squared_error')
 with open('model_details.txt','w') as fh:
 	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
 
-exit()
 
 #Train!
+traning_start = time.time()
 autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=batchSize)
+traning_end = time.time()
 
 #See performance on training data
 output = autoencoder.predict(x_train)
@@ -171,6 +176,19 @@ y_test=np.reshape(y_test,(maxLen*nSamples,3))
 np.savetxt('target_trj',y_test)
 np.savetxt('autoencoded_trj',output)
 np.savetxt('error',output-y_test)
+np.savetxt('training_time',training_end-training_start)
+details=open('training_details')
+details.write('#batch size: batchSize = '+str(batchSize)+ '\n')
+details.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')
+details.write('#Specify stride: stride= '+str(stride)+ ' \n')
+details.write('#Number of filters: nFilters = '+str(nFilters)+ ' \n')
+details.write('#Specify input size: inputSize = '+str(inputSize)+ ' \n')
+details.write('#Number of samples: nSamples = '+str(nSamples)+ ' \n')
+details.write('#Epochs: nEpochs = '+str(nEpochs)+ ' \n')
+details.write('#Max length - Nearest power of two above inputSize. Automate this.: maxLen = '+str(maxLen)+ ' \n')
+details.write('#Bottleneck: bottleneck = '+str(bottleneck)+ ' \n')
+details.write('#Compression per layer: compression = '+str(compression)+ ' \n')
+
 
 
 

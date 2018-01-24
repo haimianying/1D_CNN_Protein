@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: sesevgen (1000)
 ;	On host: sesevgen-P67X-UD3-B3
-;	At date: Thu Jan 18 16:39:27 2018
+;	At date: Wed Jan 24 15:29:30 2018
 
 ;
 ;	Created by:
@@ -12,7 +12,7 @@
 ;	Data prefix:  /usr/local/gromacs
 ;	Working dir:  /home/sesevgen/Keras/1D_CNN_Protein/deca_alanine
 ;	Command line:
-;	  gmx grompp -f nvt.mdp -p topol.top -c minim.gro -o nvt.tpr
+;	  gmx grompp -f nvt.mdp -p topol.top -c nvt.gro -o nvt_long.tpr
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -26,7 +26,7 @@ integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.002
-nsteps                   = 100000
+nsteps                   = 10000000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)

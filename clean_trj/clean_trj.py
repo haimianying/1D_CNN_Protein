@@ -14,7 +14,7 @@ period = 106
 nRemove = 3
 
 #Trj to open in gro format
-trjname = '../deca_alanine/nvt_full.gro'
+trjname = '../deca_alanine/nvt_long_full.gro'
 
 #Output file name
 cleanedTrj = '../cleaned_input'
