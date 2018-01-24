@@ -24,10 +24,10 @@ box = [5.0,5.0,5.0]
 templateGro = '../deca_alanine/nvt_full.gro'
 
 #Autoencoded or modified trj to expand.
-trjIn = '../target_trj'
+trjIn = '../autoencoded_trj'
 
 #Output file name
-reconstructedTrj = '../modified_original.gro'
+reconstructedTrj = '../modified_autoencoded.gro'
 
 
 
