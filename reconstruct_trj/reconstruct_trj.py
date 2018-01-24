@@ -21,7 +21,7 @@ nRemove = 128-106
 box = [5.0,5.0,5.0]
 
 #Trj to open in gro format to use as a template
-templateGro = '../deca_alanine/nvt_full.gro'
+templateGro = '../deca_alanine/nvt_long_full.gro'
 
 #Autoencoded or modified trj to expand.
 trjIn = '../autoencoded_trj'
