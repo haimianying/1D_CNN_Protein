@@ -136,9 +136,6 @@ decoded = Dense(3)(x)
 autoencoder = Model(input_shape,decoded)
 autoencoder.compile(optimizer='adamax', loss='mean_squared_error')
 
-with open('model_details.txt','w') as fh:
-	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
-
 
 #Train!
 training_start = time.time()
@@ -175,20 +172,21 @@ y_test=np.reshape(y_test,(maxLen*nSamples,3))
 
 np.savetxt('target_trj',y_test)
 np.savetxt('autoencoded_trj',output)
-np.savetxt('error',output-y_test)
-details=open('training_details','w')
-details.write('#batch size: batchSize = '+str(batchSize)+ '\n')
-details.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')
-details.write('#Specify stride: stride= '+str(stride)+ ' \n')
-details.write('#Number of filters: nFilters = '+str(nFilters)+ ' \n')
-details.write('#Specify input size: inputSize = '+str(inputSize)+ ' \n')
-details.write('#Number of samples: nSamples = '+str(nSamples)+ ' \n')
-details.write('#Epochs: nEpochs = '+str(nEpochs)+ ' \n')
-details.write('#Max length - Nearest power of two above inputSize. Automate this.: maxLen = '+str(maxLen)+ ' \n')
-details.write('#Bottleneck: bottleneck = '+str(bottleneck)+ ' \n')
-details.write('#Compression per layer: compression = '+str(compression)+ ' \n')
-details.write('Total training time in seconds: '+str(training_end-training_start))
-details.close()
+
+with open('model_details_single','w') as fh:
+	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
+	fh.write('#batch size: batchSize = '+str(batchSize)+ '\n')
+	fh.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')
+	fh.write('#Specify stride: stride= '+str(stride)+ ' \n')
+	fh.write('#Number of filters: nFilters = '+str(nFilters)+ ' \n')
+	fh.write('#Specify input size: inputSize = '+str(inputSize)+ ' \n')
+	fh.write('#Number of samples: nSamples = '+str(nSamples)+ ' \n')
+	fh.write('#Epochs: nEpochs = '+str(nEpochs)+ ' \n')
+	fh.write('#Max length - Nearest power of two above inputSize. Automate this.: maxLen = '+str(maxLen)+ ' \n')
+	fh.write('#Bottleneck: bottleneck = '+str(bottleneck)+ ' \n')
+	fh.write('#Compression per layer: compression = '+str(compression)+ ' \n')
+	fh.write('Total training time in seconds: '+str(training_end-training_start)+'\n')
+	fh.write('Total error :' + str(np.average(np.power(output-y_test,2))))
 
 
 

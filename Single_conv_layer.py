@@ -3,6 +3,7 @@ from keras.layers import Input, Dense, Conv1D, MaxPooling1D, UpSampling1D, Flatt
 from keras.models import Model
 from keras.preprocessing import sequence
 import numpy as np
+import time
 
 #batch size:
 batchSize = 100
@@ -20,10 +21,10 @@ nFilters = 16
 inputSize = 103
 
 #Number of samples
-nSamples = 100
+nSamples = 1000
 
 #Epochs
-nEpochs = 5000
+nEpochs = 10000
 
 #Max length - Nearest power of two above inputSize. Automate this.
 maxLen = 128
@@ -130,13 +131,11 @@ decoded = Conv1D(3,filterWindow, strides=stride, activation='linear',padding='sa
 autoencoder = Model(input_shape,decoded)
 autoencoder.compile(optimizer='adamax', loss='mean_squared_error')
 
-with open('model_details.txt','w') as fh:
-	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
-
-exit()
 
 #Train!
+training_start = time.time()
 autoencoder.fit(x_train,y_train,epochs=nEpochs, batch_size=batchSize)
+training_end = time.time()
 
 #See performance on training data
 output = autoencoder.predict(x_train)
@@ -166,9 +165,22 @@ output=np.reshape(output,(maxLen*nSamples,3))
 y_test=np.reshape(y_train,(1,maxLen*nSamples,3))
 y_test=np.reshape(y_test,(maxLen*nSamples,3))
 
-np.savetxt('target_trj',y_test)
-np.savetxt('autoencoded_trj',output)
-np.savetxt('error',output-y_test)
+np.savetxt('target_trj_single',y_test)
+np.savetxt('autoencoded_trj_single',output)
+
+with open('model_details_single','w') as fh:
+	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
+	fh.write('#batch size: batchSize = '+str(batchSize)+ '\n')
+	fh.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')
+	fh.write('#Specify stride: stride= '+str(stride)+ ' \n')
+	fh.write('#Number of filters: nFilters = '+str(nFilters)+ ' \n')
+	fh.write('#Specify input size: inputSize = '+str(inputSize)+ ' \n')
+	fh.write('#Number of samples: nSamples = '+str(nSamples)+ ' \n')
+	fh.write('#Epochs: nEpochs = '+str(nEpochs)+ ' \n')
+	fh.write('#Max length - Nearest power of two above inputSize. Automate this.: maxLen = '+str(maxLen)+ ' \n')
+	fh.write('#Bottleneck: bottleneck = '+str(bottleneck)+ ' \n')
+	fh.write('Total training time in seconds: '+str(training_end-training_start)+'\n')
+	fh.write('Total error :' + str(np.average(np.power(output-y_test,2))))
 
 
 
