@@ -170,10 +170,10 @@ output=np.reshape(output,(maxLen*nSamples,3))
 y_test=np.reshape(y_train,(1,maxLen*nSamples,3))
 y_test=np.reshape(y_test,(maxLen*nSamples,3))
 
-np.savetxt('target_trj',y_test)
-np.savetxt('autoencoded_trj',output)
+np.savetxt('target_trj_autoCNN',y_test)
+np.savetxt('autoencoded_trj_autoCNN',output)
 
-with open('model_details_single','w') as fh:
+with open('model_details_autoCNN','w') as fh:
 	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
 	fh.write('#batch size: batchSize = '+str(batchSize)+ '\n')
 	fh.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')

@@ -8,14 +8,8 @@ import time
 #batch size:
 batchSize = 100
 
-#Specify filter window size:
-filterWindow = 10
-
 #Specify stride:
 stride= 1
-
-#Number of filters:
-nFilters = 100
 
 #Specify input size:
 inputSize = 103
@@ -156,12 +150,10 @@ y_test=np.reshape(y_test,(maxLen*nSamples,3))
 
 np.savetxt('target_trj_PCA',y_test)
 np.savetxt('autoencoded_trj_PCA',output)
-with open('model_details_single','w') as fh:
+with open('model_details_PCA','w') as fh:
 	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
 	fh.write('#batch size: batchSize = '+str(batchSize)+ '\n')
-	fh.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')
 	fh.write('#Specify stride: stride= '+str(stride)+ ' \n')
-	fh.write('#Number of filters: nFilters = '+str(nFilters)+ ' \n')
 	fh.write('#Specify input size: inputSize = '+str(inputSize)+ ' \n')
 	fh.write('#Number of samples: nSamples = '+str(nSamples)+ ' \n')
 	fh.write('#Epochs: nEpochs = '+str(nEpochs)+ ' \n')
