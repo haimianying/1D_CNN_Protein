@@ -28,6 +28,8 @@ _________________________________________________________________
 conv1d_4 (Conv1D)            (None, 128, 16)           2064      
 _________________________________________________________________
 dense_3 (Dense)              (None, 128, 3)            51        
+_________________________________________________________________
+masking_1 (Masking)          (None, 128, 3)            0         
 =================================================================
 Total params: 7,285
 Trainable params: 7,285
@@ -43,5 +45,5 @@ _________________________________________________________________
 #Max length - Nearest power of two above inputSize. Automate this.: maxLen = 128 
 #Bottleneck: bottleneck = 2 
 #Compression per layer: compression = 4 
-Total training time in seconds: 291.7055130004883
-Total error :0.007058367993218788
+Total training time in seconds: 343.26757287979126
+Total error :0.009288337419604083

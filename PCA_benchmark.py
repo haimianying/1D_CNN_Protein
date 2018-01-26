@@ -1,12 +1,12 @@
 import keras
-from keras.layers import Input, Dense, Flatten, Reshape
+from keras.layers import Input, Dense, Flatten, Reshape, Masking
 from keras.models import Model
 from keras.preprocessing import sequence
 import numpy as np
 import time
 
 #batch size:
-batchSize = 100
+batchSize = 500
 
 #Specify stride:
 stride= 1
@@ -21,25 +21,29 @@ nSamples = 1000
 nEpochs = 10000
 
 #Max length - Nearest power of two above inputSize. Automate this.
-maxLen = 103
+maxLen = 128
 
 #Bottleneck
 bottleneck = 2
 
-#------------------------------#
+#Shall we pad?
+pad = True
 
+#------------------------------#
+#Define custom loss to not train on padded values?
+#Useless?
 
 #DATA PREPROCESSING
-# Load trajectory data
+#Load trajectory data
 traj = np.loadtxt('cleaned_input')
 
-#Testing - load a single timepoint
-x_train = traj[0:inputSize*nSamples,0:3]
-y_train = traj[inputSize:inputSize*(nSamples+1),0:3]
+#Convert data to arrays
+x_trj = traj[0:inputSize*nSamples,0:3]
+y_trj = traj[inputSize:inputSize*(nSamples+1),0:3]
 
 #Reshape to add number of samples dimension
-x_train = np.reshape(x_train,(nSamples,inputSize,3))
-y_train = np.reshape(y_train,(nSamples,inputSize,3))
+x_trj = np.reshape(x_trj,(nSamples,inputSize,3))
+y_trj = np.reshape(y_trj,(nSamples,inputSize,3))
 
 #Remove geometrical center from each timepoint
 x_shifti=np.ones(nSamples)
@@ -51,57 +55,51 @@ y_shiftj=np.ones(nSamples)
 y_shiftk=np.ones(nSamples)
 
 for i in range(0,nSamples):
-	x_shifti[i] = np.average(x_train[i,:,0])
-	x_shiftj[i] = np.average(x_train[i,:,1])
-	x_shiftk[i] = np.average(x_train[i,:,2])
+	x_shifti[i] = np.average(x_trj[i,:,0])
+	x_shiftj[i] = np.average(x_trj[i,:,1])
+	x_shiftk[i] = np.average(x_trj[i,:,2])
 
-	y_shifti[i] = np.average(y_train[i,:,0])
-	y_shiftj[i] = np.average(y_train[i,:,1])
-	y_shiftk[i] = np.average(y_train[i,:,2])
+	y_shifti[i] = np.average(y_trj[i,:,0])
+	y_shiftj[i] = np.average(y_trj[i,:,1])
+	y_shiftk[i] = np.average(y_trj[i,:,2])
 
-	x_train[i,:,0] = x_train[i,:,0] - x_shifti[i]
-	x_train[i,:,1] = x_train[i,:,1] - x_shiftj[i]
-	x_train[i,:,2] = x_train[i,:,2] - x_shiftk[i] 
+	x_trj[i,:,0] = x_trj[i,:,0] - x_shifti[i]
+	x_trj[i,:,1] = x_trj[i,:,1] - x_shiftj[i]
+	x_trj[i,:,2] = x_trj[i,:,2] - x_shiftk[i] 
 
-	y_train[i,:,0] = y_train[i,:,0] - y_shifti[i] 
-	y_train[i,:,1] = y_train[i,:,1] - y_shiftj[i] 
-	y_train[i,:,2] = y_train[i,:,2] - y_shiftk[i] 
+	y_trj[i,:,0] = y_trj[i,:,0] - y_shifti[i] 
+	y_trj[i,:,1] = y_trj[i,:,1] - y_shiftj[i] 
+	y_trj[i,:,2] = y_trj[i,:,2] - y_shiftk[i] 
 
-#print(y_train)
 
 #Now scale from -1 to 1
 #Omit for now.
 if(0):
-	x_min = np.amin(x_train)
-	y_min = np.amin(y_train)
+	x_min = np.amin(x_trj)
+	y_min = np.amin(y_trj)
 
-	x_train = x_train - x_min
-	y_train = y_train - y_min
+	x_trj = x_train - x_min
+	y_trj = y_train - y_min
 
-	x_coeff = np.amax(x_train)
-	y_coeff = np.amax(y_train)
+	x_coeff = np.amax(x_trj)
+	y_coeff = np.amax(y_trj)
 
-	x_train = x_train/x_coeff
-	y_train = y_train/y_coeff
+	x_trj = x_trj/x_coeff
+	y_trj = y_trj/y_coeff
 
-#print(x_train[0,:,:])
 
 #Preprocess data - Raise to the nearest power of 2.
-#Not currently needed.
-if(0):
-	x_train = sequence.pad_sequences(x_train, maxlen = maxLen, dtype='float', padding = 'post', value=0.)
-	y_train = sequence.pad_sequences(y_train, maxlen = maxLen, dtype='float', padding = 'post', value=0.)
-
-#print(x_train[0,:,:])
-#exit()
-
-#Save for evaluation of autoencoder performance
-y_test = y_train
-
-input_shape = Input(shape=(maxLen,3))
+#Waste of space to assign to another variable?
+if(pad):
+	x_train = sequence.pad_sequences(x_trj, maxlen = maxLen, dtype='float', padding = 'post', value=0.)
+	y_train = sequence.pad_sequences(y_trj, maxlen = maxLen, dtype='float', padding = 'post', value=0.)
+else:
+	maxLen = inputSize
 
 #MODEL SETUP
 #Setup 1D PCA-like time-lagged autoencoder
+
+input_shape = Input(shape=(maxLen,3))
 
 #Encoder:
 inputLayer = Flatten()(input_shape)
@@ -111,9 +109,13 @@ encoded = Dense(bottleneck)(inputLayer)
 decoded = Dense(maxLen*3)(encoded)
 reshaped = Reshape((maxLen,3))(decoded)
 
+#Mask the padded data.
+if(pad):
+	decoded = Masking(0.)(decoded)
+
+#Compile model
 autoencoder = Model(input_shape,reshaped)
 autoencoder.compile(optimizer='adadelta', loss='mean_squared_error')
-
 
 #Train!
 training_start = time.time()
@@ -143,10 +145,11 @@ if(0):
 		y_train[i,:,1] = y_train[i,:,1] + y_shiftj[i] 
 		y_train[i,:,2] = y_train[i,:,2] + y_shiftk[i]
 
-output=np.reshape(output,(1,maxLen*nSamples,3))
-output=np.reshape(output,(maxLen*nSamples,3))
-y_test=np.reshape(y_train,(1,maxLen*nSamples,3))
-y_test=np.reshape(y_test,(maxLen*nSamples,3))
+#Depad and prepare for output
+output=np.reshape(output[:,0:inputSize,:],(1,inputSize*nSamples,3))
+output=np.reshape(output,(inputSize*nSamples,3))
+y_test=np.reshape(y_train[:,0:inputSize,:],(1,inputSize*nSamples,3))
+y_test=np.reshape(y_test,(inputSize*nSamples,3))
 
 np.savetxt('target_trj_PCA',y_test)
 np.savetxt('autoencoded_trj_PCA',output)
@@ -160,6 +163,7 @@ with open('model_details_PCA','w') as fh:
 	fh.write('#Max length - Nearest power of two above inputSize. Automate this.: maxLen = '+str(maxLen)+ ' \n')
 	fh.write('#Bottleneck: bottleneck = '+str(bottleneck)+ ' \n')
 	fh.write('Total training time in seconds: '+str(training_end-training_start)+'\n')
+	fh.write('#Shall we pad?: pad = '+str(pad)+'\n')
 	fh.write('Total error :' + str(np.average(np.power(output-y_test,2))))
 
 

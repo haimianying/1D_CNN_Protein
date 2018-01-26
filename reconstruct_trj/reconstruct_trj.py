@@ -7,7 +7,7 @@ import re
 
 
 #Period = repeating period of gro - to clean the box size, atom number and title lines from trajectory.
-periodInput = 128
+periodInput = 103
 
 #Period = repeating period of gro - to clean the box size, atom number and title lines from trajectory.
 periodReference = 106
