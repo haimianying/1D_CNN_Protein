@@ -141,14 +141,14 @@ Protein             3
    10     9    15     1 
    11     9    15     1 
     9    11    12     1 
-    9    11    13     1 
+    9    11    13     1 tip3p missing gromacs
     9    11    14     1 
    12    11    13     1 
    12    11    14     1 
    13    11    14     1 
     9    15    16     1 
     9    15    17     1 
-   16    15    17     1 
+   16    15    17     1 are all aligned on the first frame using
    15    17    18     1 
    15    17    19     1 
    18    17    19     1 
@@ -230,8 +230,9 @@ Protein             3
 
 [ system ]
 ; Name
-ADP in vacuum
+ADP in vacuum in water
 
 [ molecules ]
 ; Compound        #mols
 Protein             1
+SOL              2158

@@ -1,0 +1,37 @@
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_1 (InputLayer)         (None, 128, 3)            0         
+_________________________________________________________________
+conv1d_1 (Conv1D)            (None, 128, 16)           400       
+_________________________________________________________________
+max_pooling1d_1 (MaxPooling1 (None, 32, 16)            0         
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 512)               0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 2)                 1026      
+_________________________________________________________________
+dense_2 (Dense)              (None, 512)               1536      
+_________________________________________________________________
+reshape_1 (Reshape)          (None, 32, 16)            0         
+_________________________________________________________________
+up_sampling1d_1 (UpSampling1 (None, 128, 16)           0         
+_________________________________________________________________
+conv1d_2 (Conv1D)            (None, 128, 3)            387       
+=================================================================
+Total params: 3,349
+Trainable params: 3,349
+Non-trainable params: 0
+_________________________________________________________________
+#batch size: batchSize = 500
+#Specify filter window size: filterWindow = 8
+#Specify stride: stride= 1 
+#Number of filters: nFilters = 16 
+#Specify input size: inputSize = 103 
+#Number of samples: nSamples = 1000 
+#Epochs: nEpochs = 10000 
+#Max length - Nearest power of two above inputSize. Automate this.: maxLen = 128 
+#Bottleneck: bottleneck = 2 
+#Compression: compression = 4
+Total training time in seconds: 215.70292162895203
+Total error :0.014896156511177263

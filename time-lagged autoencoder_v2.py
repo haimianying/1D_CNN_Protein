@@ -6,8 +6,11 @@ from keras.preprocessing import sequence
 import numpy as np
 import time 
 
+#Input name
+inputName = 'cleaned_input_ADP'
+
 #batch size:
-batchSize = 500
+batchSize = 10000
 
 #Specify filter window size:
 filterWindow = 8
@@ -19,28 +22,33 @@ stride= 1
 nFilters = 16
 
 #Specify input size:
-inputSize = 103
+#inputSize = 103
+inputSize = 22
 
 #Number of samples
-nSamples = 1000
+nSamples = 20000
 
 #Epochs
-nEpochs = 10000
+nEpochs = 200
 
 #Max length - Nearest power of two above inputSize. Automate this.
-maxLen = 128
+#maxLen = 128
+maxLen = 32
 
 #Bottleneck
-bottleneck = 2
+bottleneck = 1
 
 #Compression per layer
 compression = 4
+
+#Append to output
+appendToOut = '_ADP'
 
 #------------------------------#
 
 #DATA PREPROCESSING
 #Load trajectory data
-traj = np.loadtxt('cleaned_input')
+traj = np.loadtxt(inputName)
 
 #Convert data to arrays
 x_trj = traj[0:inputSize*nSamples,0:3]
@@ -116,8 +124,8 @@ while(counter/compression >= compression):
 
 #Add a dense layer bottleneck
 x = Flatten()(x)
-x = Dense(bottleneck, activation = 'elu')(x)
-x = Dense(int(counter*nFilters), activation = 'elu')(x)
+neck = Dense(bottleneck, activation = 'elu')(x)
+x = Dense(int(counter*nFilters), activation = 'elu')(neck)
 x = Reshape((int(counter),nFilters))(x)
 
 
@@ -143,6 +151,32 @@ training_end = time.time()
 #See performance on training data
 output = autoencoder.predict(x_train)
 
+#Get the bottleneck values
+#Reconstruct the encoder
+print(autoencoder.summary())
+input_shape2 = Input(shape=(maxLen,3))
+counter = maxLen/compression
+y = Conv1D(nFilters,filterWindow, strides=stride, activation='elu',padding='same',weights=autoencoder.layers[1].get_weights())(input_shape2)
+y = MaxPooling1D(compression)(y)
+i = 1
+while(counter/compression >= compression):
+	i = i + 2
+	y = Conv1D(nFilters,filterWindow, strides=stride, activation='elu',padding='same',weights=autoencoder.layers[i].get_weights())(y)
+	y = MaxPooling1D(compression)(y)
+	counter = counter/compression
+	
+i = i + 3
+y = Flatten()(y)
+neck2 = Dense(bottleneck, activation = 'elu',weights=autoencoder.layers[i].get_weights())(y)
+
+encoder = Model(input_shape2,neck2)
+encoder.compile(optimizer = 'adamax',loss='mean_squared_error')
+print(encoder.summary())
+
+Z = encoder.predict(x_train)
+np.savetxt('latent'+appendToOut,Z)
+
+#Post Processing
 if(0):
 	output = output*y_coeff + y_min
 
@@ -169,10 +203,10 @@ output=np.reshape(output,(inputSize*nSamples,3))
 y_test=np.reshape(y_train[:,0:inputSize,:],(1,inputSize*nSamples,3))
 y_test=np.reshape(y_test,(inputSize*nSamples,3))
 
-np.savetxt('target_trj_autoCNN',y_test)
-np.savetxt('autoencoded_trj_autoCNN',output)
+np.savetxt('target_trj_autoCNN'+appendToOut,y_test)
+np.savetxt('autoencoded_trj_autoCNN'+appendToOut,output)
 
-with open('model_details_autoCNN','w') as fh:
+with open('model_details_autoCNN'+appendToOut,'w') as fh:
 	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
 	fh.write('#batch size: batchSize = '+str(batchSize)+ '\n')
 	fh.write('#Specify filter window size: filterWindow = '+str(filterWindow)+ '\n')

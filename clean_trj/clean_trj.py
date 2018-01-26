@@ -8,16 +8,16 @@ import re
 
 
 #Period = repeating period of gro - to clean the box size, atom number and title lines from trajectory.
-period = 106
+period = 25
 
 #Number of spurious lines
 nRemove = 3
 
 #Trj to open in gro format
-trjname = '../deca_alanine/nvt_long_full.gro'
+trjname = '../ADP/adp_long_full.gro'
 
 #Output file name
-cleanedTrj = '../cleaned_input'
+cleanedTrj = '../cleaned_input_ADP'
 
 
 

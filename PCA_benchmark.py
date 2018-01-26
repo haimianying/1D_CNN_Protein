@@ -5,29 +5,37 @@ from keras.preprocessing import sequence
 import numpy as np
 import time
 
+#Input name
+inputName = 'cleaned_input_ADP'
+
 #batch size:
-batchSize = 500
+batchSize = 10000
 
 #Specify stride:
 stride= 1
 
 #Specify input size:
-inputSize = 103
+#inputSize = 103
+inputSize = 22
 
 #Number of samples
-nSamples = 1000
+nSamples = 20000
 
 #Epochs
-nEpochs = 10000
+nEpochs = 1000
 
 #Max length - Nearest power of two above inputSize. Automate this.
-maxLen = 128
+#maxLen = 128
+maxLen = 32
 
 #Bottleneck
-bottleneck = 2
+bottleneck = 1
 
 #Shall we pad?
 pad = True
+
+#Append to output
+appendToOut = '_ADP'
 
 #------------------------------#
 #Define custom loss to not train on padded values?
@@ -35,7 +43,7 @@ pad = True
 
 #DATA PREPROCESSING
 #Load trajectory data
-traj = np.loadtxt('cleaned_input')
+traj = np.loadtxt(inputName)
 
 #Convert data to arrays
 x_trj = traj[0:inputSize*nSamples,0:3]
@@ -125,6 +133,20 @@ training_end = time.time()
 #See performance on training data
 output = autoencoder.predict(x_train)
 
+#Get the bottleneck values
+#Reconstruct the encoder
+print(autoencoder.summary())
+input_shape2 = Input(shape=(maxLen,3))
+inputLayer2 = Flatten()(input_shape2)
+encoded2 = Dense(bottleneck,weights=autoencoder.layers[2].get_weights())(inputLayer2)
+
+encoder = Model(input_shape2,encoded2)
+encoder.compile(optimizer = 'adamax',loss='mean_squared_error')
+print(encoder.summary())
+
+Z = encoder.predict(x_train)
+np.savetxt('latent_PCA'+appendToOut,Z)
+
 if(0):
 	output = output*y_coeff + y_min
 
@@ -151,9 +173,10 @@ output=np.reshape(output,(inputSize*nSamples,3))
 y_test=np.reshape(y_train[:,0:inputSize,:],(1,inputSize*nSamples,3))
 y_test=np.reshape(y_test,(inputSize*nSamples,3))
 
-np.savetxt('target_trj_PCA',y_test)
-np.savetxt('autoencoded_trj_PCA',output)
-with open('model_details_PCA','w') as fh:
+np.savetxt('target_trj_PCA'+appendToOut,y_test)
+np.savetxt('autoencoded_trj_PCA'+appendToOut,output)
+
+with open('model_details_PCA'+appendToOut,'w') as fh:
 	autoencoder.summary(print_fn=lambda x: fh.write(x + '\n'))
 	fh.write('#batch size: batchSize = '+str(batchSize)+ '\n')
 	fh.write('#Specify stride: stride= '+str(stride)+ ' \n')
